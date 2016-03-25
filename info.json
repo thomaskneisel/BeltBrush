@@ -1,0 +1,10 @@
+ {
+  "name": "BeltBrush",
+  "version": "0.0.2",
+  "title": "Belt Brush",
+  "author": "Matjojo",
+  "contact": "Message me @ factorio forums",
+  "homepage": "--",
+  "description": "Belt brush allows belts to be placed the same way concrete is placed, inspired by arumba07 on YT and Twitch",
+  "dependencies": ["base"]
+ }
