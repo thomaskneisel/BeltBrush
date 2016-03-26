@@ -153,6 +153,7 @@ script.on_event(defines.events.on_tick, function(event)
 			game.players[i].gui.top.BB_flow_main.add{type = "label", name = "BB_label_EX", caption = "BB:"}
 			game.players[i].gui.top.BB_flow_main.add{type = "label", name = "BB_label_1", caption = "1"}
 			game.players[i].gui.top.BB_flow_main.add{type = "checkbox", name = "BB_check_1", state = true}
+			BB_glob_amount = {}
 			BB_glob_amount[i] = 0
 			game.players[i].gui.top.BB_flow_main.add{type = "label", name = "BB_label_2", caption = "2"}
 			game.players[i].gui.top.BB_flow_main.add{type = "checkbox", name = "BB_check_2", state = false}
