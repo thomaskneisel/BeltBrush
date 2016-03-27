@@ -34,18 +34,32 @@ local directionMap = {
 local function placeBelt(event, player)
 	local entity = event.created_entity
 	local position = entity.position
+	local surface = game.get_surface(1)
+	local inventorys = { 
+		main = player.get_inventory(defines.inventory.player_main), 
+		quickbar = player.get_inventory(defines.inventory.player_quickbar) 
+	}
 
 	if getBeltAmount(player) == 0 then
 		do return end
 	end
-	
+
 	for belt = 1, getBeltAmount(player), 1 do
-		if game.get_surface(1).can_place_entity{name = entity.name, position = directionMap[entity.direction](position, belt), direction = entity.direction, force = entity.force} then
+		local newEnitiy = {name = entity.name, position = directionMap[entity.direction](position, belt), direction = entity.direction, force = entity.force}
+		if game.get_surface(1).can_place_entity(newEnitiy) then
 			if player.cursor_stack.valid_for_read and player.cursor_stack.count >= 1 then
-				game.get_surface(1).create_entity{name = entity.name, position = directionMap[entity.direction](position, belt), direction = entity.direction, force = entity.force}
+				surface.create_entity(newEnitiy)
 				player.cursor_stack.count = player.cursor_stack.count - 1
+			elseif inventorys.main.get_item_count(entity.name) > 0 then				
+				if inventorys.main.remove({name = entity.name, count = 1}) then
+					surface.create_entity(newEnitiy)
+				end				
+			elseif inventorys.quickbar.get_item_count(entity.name) > 0 then				
+				if inventorys.quickbar.remove({name = entity.name, count = 1}) then
+					surface.create_entity(newEnitiy)
+				end				
 			end
-		end
+		end		
 	end
 end
 
