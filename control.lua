@@ -1,156 +1,95 @@
 require("defines")
 
-function Place_north(event, PI)
+-- defines gui checkbox count
+-- and beltplace count
+BB_CHECKBOX_COUNT = 4
 
-	BB_var_name = event.created_entity.name
-	BB_var_X = event.created_entity.position.x
-	BB_var_Y = event.created_entity.position.y
-	BB_var_dir = event.created_entity.direction
-	BB_var_force = event.created_entity.force
-	for i=1, 3, 1 do
-		if i <= BB_glob_amount then
-			if game.players[PI].cursor_stack.valid_for_read == true then
-				if game.get_surface(1).can_place_entity{name = BB_var_name, position = {x = (BB_var_X + i), y = (BB_var_Y)}, direction = BB_var_dir, force = BB_var_force} then
-					if game.players[PI].cursor_stack.count >= 1 then
-						game.get_surface(1).create_entity{name = BB_var_name, position = {x = (BB_var_X + i), y = (BB_var_Y)}, direction = BB_var_dir, force = BB_var_force}
-						game.players[PI].cursor_stack.count = game.players[PI].cursor_stack.count - 1
-					end
-				end
-			end
-		else
-			break
-		end
-	end
-
-end
-
-function Place_east(event, PI)
-
-	BB_var_name = event.created_entity.name
-	BB_var_X = event.created_entity.position.x
-	BB_var_Y = event.created_entity.position.y
-	BB_var_dir = event.created_entity.direction
-	BB_var_force = event.created_entity.force
-	for i=1, 3, 1 do
-		if i <= BB_glob_amount then
-			if game.players[PI].cursor_stack.valid_for_read == true then
-				if game.get_surface(1).can_place_entity{name = BB_var_name, position = {x = (BB_var_X), y = (BB_var_Y + i)}, direction = BB_var_dir, force = BB_var_force} then
-					if game.players[PI].cursor_stack.count >= 1 then
-						game.get_surface(1).create_entity{name = BB_var_name, position = {x = (BB_var_X), y = (BB_var_Y + i)}, direction = BB_var_dir, force = BB_var_force}
-						game.players[PI].cursor_stack.count = game.players[PI].cursor_stack.count - 1
-					end
-				end
-			end
-		else
-			break
-		end
-	end
-
-end
-
-function Place_south(event, PI)
-
-	BB_var_name = event.created_entity.name
-	BB_var_X = event.created_entity.position.x
-	BB_var_Y = event.created_entity.position.y
-	BB_var_dir = event.created_entity.direction
-	BB_var_force = event.created_entity.force
-	for i=1, 3, 1 do
-				if i <= BB_glob_amount then
-			if game.players[PI].cursor_stack.valid_for_read == true then
-				if game.get_surface(1).can_place_entity{name = BB_var_name, position = {x = (BB_var_X - i), y = (BB_var_Y)}, direction = BB_var_dir, force = BB_var_force} then
-					if game.players[PI].cursor_stack.count >= 1 then
-						game.get_surface(1).create_entity{name = BB_var_name, position = {x = (BB_var_X - i), y = (BB_var_Y)}, direction = BB_var_dir, force = BB_var_force}
-						game.players[PI].cursor_stack.count = game.players[PI].cursor_stack.count - 1
-					end
-				end
-			end
-		else
-			break
-		end
-	end
-
-end
-
-function Place_west(event, PI)
-
-	BB_var_name = event.created_entity.name
-	BB_var_X = event.created_entity.position.x
-	BB_var_Y = event.created_entity.position.y
-	BB_var_dir = event.created_entity.direction
-	BB_var_force = event.created_entity.force
-	for i=1, 3, 1 do
-		if i <= BB_glob_amount then
-			if game.players[PI].cursor_stack.valid_for_read == true then
-				if game.get_surface(1).can_place_entity{name = BB_var_name, position = {x = (BB_var_X), y = (BB_var_Y - i)}, direction = BB_var_dir, force = BB_var_force} then
-					if game.players[PI].cursor_stack.count >= 1 then
-						game.get_surface(1).create_entity{name = BB_var_name, position = {x = (BB_var_X), y = (BB_var_Y - i)}, direction = BB_var_dir, force = BB_var_force}
-						game.players[PI].cursor_stack.count = game.players[PI].cursor_stack.count - 1
-					end
-				end
-			end
-		else
-			break
-		end
-	end
-
-end
-
-script.on_event(defines.events.on_built_entity, function(event)
-	
-	if event.created_entity.type == "transport-belt" then
-
-		-- remember selected checkbox
-		local player = game.players[event.player_index]
-		for checkbox = 1, 4, 1 do
+local function getBeltAmount(player)
+	if not global.BB_glob_amount then
+		for checkbox = 1, BB_CHECKBOX_COUNT, 1 do
 			if player.gui.top.BB_flow_main["BB_check_"..checkbox].state == true then
-				BB_glob_amount = checkbox - 1
+				global.BB_glob_amount = checkbox - 1
 				break;
 			end
 		end
-		if event.created_entity.direction == defines.direction.north then
-			Place_north(event, event.player_index)
-		elseif event.created_entity.direction == defines.direction.east then
-			Place_east(event, event.player_index)
-		elseif event.created_entity.direction == defines.direction.south then
-			Place_south(event, event.player_index)
-		elseif event.created_entity.direction == defines.direction.west then
-			Place_west(event, event.player_index)
+	end
+	return global.BB_glob_amount
+end
+
+local directionMap = {
+	[defines.direction.north] = function(position, beltNumber)
+		return { x = position.x + beltNumber, y=position.y }
+		end,
+	[defines.direction.east] = function(position, beltNumber)
+		return { x = position.x, y=position.y + beltNumber}
+		end,
+	[defines.direction.south] = function(position, beltNumber)
+		return { x = position.x - beltNumber, y=position.y }
+		end,
+	[defines.direction.west] = function(position, beltNumber)
+		return { x = position.x, y=position.y - beltNumber }
+		end,
+}
+
+local function placeBelt(event, player)
+	local entity = event.created_entity
+	local position = entity.position
+
+	if getBeltAmount(player) == 0 then
+		do return end
+	end
+	
+	for belt = 1, getBeltAmount(player), 1 do
+		if game.get_surface(1).can_place_entity{name = entity.name, position = directionMap[entity.direction](position, belt), direction = entity.direction, force = entity.force} then
+			if player.cursor_stack.valid_for_read and player.cursor_stack.count >= 1 then
+				game.get_surface(1).create_entity{name = entity.name, position = directionMap[entity.direction](position, belt), direction = entity.direction, force = entity.force}
+				player.cursor_stack.count = player.cursor_stack.count - 1
+			end
 		end
 	end
+end
 
+local function on_built_entity (event)
+	if event.created_entity.type == "transport-belt" then
+		local player = game.players[event.player_index]
+		placeBelt(event, player)
+	end
+end
 
-end)
-
-script.on_event(defines.events.on_tick, function(event)
-	
+local function on_tick(event)
 	for i,player in pairs(game.players) do
 		if not player.gui.top.BB_flow_main then
 			player.gui.top.add{type = "flow", name = "BB_flow_main", direction = "horizontal"}
 			player.gui.top.BB_flow_main.add{type = "label", name = "BB_label_EX", caption = "BB:"}
-			player.gui.top.BB_flow_main.add{type = "label", name = "BB_label_1", caption = "1"}
-			player.gui.top.BB_flow_main.add{type = "checkbox", name = "BB_check_1", state = true}
-			player.gui.top.BB_flow_main.add{type = "label", name = "BB_label_2", caption = "2"}
-			player.gui.top.BB_flow_main.add{type = "checkbox", name = "BB_check_2", state = false}
-			player.gui.top.BB_flow_main.add{type = "label", name = "BB_label_3", caption = "3"}
-			player.gui.top.BB_flow_main.add{type = "checkbox", name = "BB_check_3", state = false}
-			player.gui.top.BB_flow_main.add{type = "label", name = "BB_label_4", caption = "4"}
-			player.gui.top.BB_flow_main.add{type = "checkbox", name = "BB_check_4", state = false}
+
+			for checkbox = 1, BB_CHECKBOX_COUNT, 1 do
+				player.gui.top.BB_flow_main.add{type = "label", name = "BB_label_"..checkbox, caption = checkbox}
+				player.gui.top.BB_flow_main.add{type = "checkbox", name = "BB_check_"..checkbox, state = true}
+			end
 		end
 	end
-end)
+end
 
-
-script.on_event(defines.events.on_gui_click, function(event)
-
+local function on_gui_click(event)
+	local checkboxPrefix = "BB_check_"
 	-- goolge "early return" :) to prevent "pyramid of doom" ... google it, again ;)
-	if not string.match(event.element.name, "BB_check_") then
+	if not string.match(event.element.name, checkboxPrefix) then
 		do return end
 	end
-
+	
+	-- unset all checkboxes and set just one checkbox
 	local player = game.players[event.player_index]
-	for checkbox = 1, 4, 1 do
-		player.gui.top.BB_flow_main["BB_check_"..checkbox].state = false
+	for checkbox = 1, BB_CHECKBOX_COUNT, 1 do
+		player.gui.top.BB_flow_main[checkboxPrefix..checkbox].state = false
 	end
 	player.gui.top.BB_flow_main[event.element.name].state = true
-end)
+
+	-- string index base 0, so + 1 for all chars, and -1 to place ADDITIONAL belts, to the one the player sets
+	local checkboxNumber = tonumber(string.sub(event.element.name, string.len(checkboxPrefix)+1))
+	global.BB_glob_amount = checkboxNumber-1
+end
+
+-- register event handlers
+script.on_event(defines.events.on_tick, on_tick)
+script.on_event(defines.events.on_built_entity, on_built_entity)
+script.on_event(defines.events.on_gui_click, on_gui_click)
